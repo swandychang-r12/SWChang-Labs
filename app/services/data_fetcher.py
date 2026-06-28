@@ -1,0 +1,165 @@
+import json
+import yfinance as yf
+from datetime import datetime, timedelta
+from typing import Dict, Any, Optional, List
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.database import OHLCVDaily
+import pytz
+
+# Load universe (used elsewhere)
+with open("/app/data/universe.json", "r") as f:
+    UNIVERSE = json.load(f)
+
+WIB = pytz.timezone("Asia/Jakarta")
+
+
+async def fetch_ohlcv(
+    ticker: str,
+    period: str = "1d",
+    interval: str = "1d",
+    db_session: Optional[AsyncSession] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    Fetch daily OHLCV data from yfinance.
+    If a DB session is supplied, the result is cached
+    in the ohlcv_daily table.
+    """
+    try:
+        # Try cache first
+        if db_session:
+            cached = await _get_cached_ohlcv(ticker, db_session)
+            if cached:
+                return cached
+
+        stock = yf.Ticker(ticker)
+        df = stock.history(period=period, interval=interval)
+        if df.empty:
+            return None
+
+        last = df.iloc[-1]
+        ohlcv = {
+            "date": last.name.strftime("%Y-%m-%d"),
+            "open": float(last["Open"]),
+            "high": float(last["High"]),
+            "low": float(last["Low"]),
+            "close": float(last["Close"]),
+            "volume": int(last["Volume"]),
+            "adjusted_close": float(last["Close"]),
+            "change_pct": round((last["Close"] - last["Open"]) / last["Open"] * 100, 2),
+        }
+
+        # Cache to DB if session provided
+        if db_session:
+            await _cache_ohlcv(ticker, ohlcv, db_session)
+
+        return ohlcv
+    except Exception as e:
+        print(f"Failed to fetch OHLCV for {ticker}: {e}")
+        return None
+
+
+async def _get_cached_ohlcv(ticker: str, db_session: AsyncSession) -> Optional[Dict[str, Any]]:
+    """Return today's cached OHLCV row if it exists."""
+    stmt = select(OHLCVDaily).where(
+        OHLCVDaily.ticker == ticker,
+        OHLCVDaily.date == datetime.now(WIB).date(),
+    )
+    result = await db_session.execute(stmt)
+    row = result.scalars().first()
+    if row:
+        return {
+            "date": row.date.strftime("%Y-%m-%d"),
+            "open": row.open,
+            "high": row.high,
+            "low": row.low,
+            "close": row.close,
+            "volume": row.volume,
+            "adjusted_close": row.adjusted_close,
+            "change_pct": round((row.close - row.open) / row.open * 100, 2),
+        }
+    return None
+
+
+async def _cache_ohlcv(ticker: str, ohlcv: Dict[str, Any], db_session: AsyncSession) -> None:
+    """Insert a new daily row into the ohlcv_daily table."""
+    try:
+        row = OHLCVDaily(
+            ticker=ticker,
+            date=datetime.strptime(ohlcv["date"], "%Y-%m-%d").date(),
+            open=ohlcv["open"],
+            high=ohlcv["high"],
+            low=ohlcv["low"],
+            close=ohlcv["close"],
+            volume=ohlcv["volume"],
+            adjusted_close=ohlcv["adjusted_close"],
+        )
+        db_session.add(row)
+        await db_session.commit()
+    except Exception as e:
+        print(f"Failed to cache OHLCV for {ticker}: {e}")
+        await db_session.rollback()
+
+
+async def fetch_market_data(ticker: str, db_session: Optional[AsyncSession] = None) -> Optional[Dict[str, Any]]:
+    """Convenient wrapper used throughout the project."""
+    ohlcv = await fetch_ohlcv(ticker, db_session=db_session)
+    if not ohlcv:
+        return None
+    # Placeholder indicator generation – replace with real calculations later
+    indicators = {
+        "rsi": 50.0,
+        "macd_hist": 0.0,
+        "ema20": ohlcv["close"],
+        "ema50": ohlcv["close"],
+        "above_ema20": True,
+        "bb_position": 0.5,
+        "atr": 10.0,
+        "adx": 20.0,
+    }
+    ml_signal = {"probability": 0.5, "action": "HOLD"}
+    broker_flow = {"stockbit_signal": "NEUTRAL", "foreign_net": 0.0}
+    return {
+        "ticker": ticker,
+        "date": ohlcv["date"],
+        "price_data": {
+            "close_last": ohlcv["close"],
+            "change_pct": ohlcv["change_pct"],
+            "close_5d": [ohlcv["close"]] * 5,
+            "volume_ratio": 1.0,
+            "high_52w": ohlcv["high"],
+            "low_52w": ohlcv["low"],
+        },
+        "indicators": indicators,
+        "ml_signal": ml_signal,
+        "broker_flow": broker_flow,
+    }
+
+
+def market_status() -> str:
+    """Return market status based on WIB time."""
+    now = datetime.now(WIB)
+    if now.weekday() >= 5:
+        return "CLOSED"
+    open_time = now.replace(hour=9, minute=0, second=0, microsecond=0)
+    close_time = now.replace(hour=15, minute=0, second=0, microsecond=0)
+    if now < open_time:
+        return "PRE_MARKET"
+    if now > close_time:
+        return "CLOSED"
+    return "OPEN"
+
+async def fetch_universe_data(universe: str = "lq45", db_session: Optional[AsyncSession] = None) -> List[Dict[str, Any]]:
+    """Fetch OHLCV data for all tickers in a universe."""
+    tickers = UNIVERSE.get(universe, [])
+    results = []
+    
+    for ticker in tickers:
+        data = await fetch_ohlcv(ticker, db_session=db_session)
+        if data:
+            results.append({
+                "ticker": ticker,
+                "data": data
+            })
+    
+    return results

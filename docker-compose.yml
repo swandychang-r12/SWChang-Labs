@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  swandy-api:
+    build: .
+    container_name: swandy-api
+    ports:
+      - "8089:8089"
+    volumes:
+      - /home/aiops/trading-scanner:/trading-scanner:ro
+      - ./config.yaml:/app/config.yaml:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://r12user:a7fe679a67d8fa6b5953d5471be37395870db5bf@r12-postgres:5432/swandy_fund
+      - TRADING_SCANNER_PATH=/trading-scanner
+      - CONFIG_YAML_PATH=/app/config.yaml
+      - PYTHONPATH=/trading-scanner:/app
+    networks:
+      - r12-net
+    restart: unless-stopped
+
+networks:
+  r12-net:
+    external: true

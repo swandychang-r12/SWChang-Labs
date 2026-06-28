@@ -1,0 +1,112 @@
+agents:
+  ai_api_key: sk-23da001d912f62cd-z8qp0d-f192f4a3
+  ai_gateway: http://172.17.0.1:20128/v1
+  bear_analyst:
+    enabled: true
+    lookback_days: 30
+    max_tokens: 800
+    model: glm/glm-4-flash
+    temperature: 0.3
+  bull_analyst:
+    enabled: true
+    include_broker_flow: true
+    include_ml_signal: true
+    lookback_days: 30
+    max_tokens: 800
+    model: groq/llama-3.3-70b-versatile
+    temperature: 0.7
+  orchestrator:
+    enabled: true
+    max_tokens: 1200
+    min_consensus_confidence: 0.6
+    model: groq/llama-3.3-70b-versatile
+    temperature: 0.1
+    voting_weights:
+      bear: 0.25
+      bull: 0.25
+      risk: 0.2
+      technical: 0.3
+  risk_analyst:
+    enabled: true
+    max_tokens: 500
+    model: groq/llama-3.1-8b-instant
+    temperature: 0.2
+  technical_analyst:
+    enabled: true
+    max_tokens: 600
+    model: groq/llama-3.3-70b-versatile
+    temperature: 0.4
+alerts:
+  telegram:
+    bot_token: ''
+    chat_id: ''
+    enabled: false
+backtest:
+  benchmark: ^JKSE
+  commission_buy: 0.0015
+  commission_sell: 0.0025
+  default_end_date: auto
+  default_start_date: '2023-01-01'
+  initial_capital_idr: 100000000
+  slippage_pct: 0.003
+data:
+  bei_scraper:
+    data_path: /home/aiops/trading-scanner/data/bei_foreign.db
+    enabled: true
+  stockbit:
+    data_path: /home/aiops/trading-scanner/data/stockbit/
+    enabled: true
+  yfinance:
+    interval: 1d
+    suffix: .JK
+indicators:
+  adx_period: 14
+  atr_period: 14
+  bb_period: 20
+  bb_std: 2.0
+  ema_periods:
+  - 9
+  - 20
+  - 50
+  - 200
+  macd_fast: 12
+  macd_signal: 9
+  macd_slow: 26
+  rsi_period: 14
+  volume_ma_period: 20
+screener:
+  max_price_idr: 99999
+  min_ai_confidence: 0.6
+  min_ml_score: 0.52
+  min_price_idr: 50
+  min_volume_ratio: 1.5
+  require_above_ema20: false
+  require_rsi_range:
+  - 30
+  - 70
+trading:
+  capital_per_position_idr: 25000000
+  commission_buy_pct: 0.0015
+  commission_sell_pct: 0.0025
+  hold_days: 3
+  max_open_positions: 5
+  min_lot_size: 100
+  slippage_pct: 0.004
+  stop_loss_pct: -4.0
+  take_profit_pct: 10.0
+  universe:
+  - BBCA
+  - BBRI
+  - BMRI
+  - ASII
+  - TLKM
+  - ANTM
+  - ADRO
+  - GOTO
+  - BREN
+  - AMMN
+  - UNVR
+  - ICBP
+  - KLBF
+  - INDF
+  - PGAS

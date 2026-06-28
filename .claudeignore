@@ -1,0 +1,8 @@
+logs/
+data/
+*.log
+*.db
+*.sqlite
+__pycache__/
+.git/
+*.pyc
