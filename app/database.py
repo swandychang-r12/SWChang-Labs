@@ -29,6 +29,28 @@ class AIAnalysis(Base):
     confidence = Column(Numeric(5, 4), nullable=False)
     created_at = Column(TIMESTAMP, default=func.now(), nullable=False)
 
+
+class VerdictOutcome(Base):
+    """Track actual price outcomes vs AI verdict for accuracy measurement."""
+    __tablename__ = "verdict_outcomes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ticker = Column(String(12), nullable=False, index=True)
+    verdict_date = Column(Date, nullable=False, index=True)
+    action = Column(String(15), nullable=False)       # BUY / SELL / HOLD etc
+    confidence = Column(Float, nullable=False)
+    ml_probability = Column(Float, nullable=True)
+    entry_price = Column(Float, nullable=True)
+    stop_loss = Column(Float, nullable=True)
+    take_profit = Column(Float, nullable=True)
+    # Filled later by outcome tracker
+    outcome_date = Column(Date, nullable=True)
+    outcome_price = Column(Float, nullable=True)
+    outcome_pnl_pct = Column(Float, nullable=True)    # (outcome_price/entry_price - 1) * 100
+    outcome_correct = Column(Integer, nullable=True)  # 1=correct, 0=wrong, NULL=pending
+    created_at = Column(TIMESTAMP, default=func.now(), nullable=False)
+
+
 class OHLCVDaily(Base):
     __tablename__ = "ohlcv_daily"
     __table_args__ = (Index('ix_ohlcv_daily_ticker_date', 'ticker', 'date'),)

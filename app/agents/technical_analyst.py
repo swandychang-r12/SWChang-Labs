@@ -5,7 +5,7 @@ class TechnicalAnalystAgent(BaseAgent):
     def get_system_prompt(self, ticker: str, market_data: dict) -> str:
         return """Kamu adalah analis saham IDX yang fokus MURNI pada chart dan indikator teknikal. Tugasmu adalah menganalisis {ticker} berdasarkan data teknikal saja.
 OUTPUT WAJIB JSON SAJA (tanpa markdown):
-{{\"stance\": \"BULLISH\"|\"BEARISH\"|\"NEUTRAL\", \"confidence\": 0.0-1.0, \"key_points\": [\"poin1\",\"poin2\",\"poin3\"], \"reasoning\": \"200 kata\"}}""".format(ticker=ticker, lookback=60)
+{{\"stance\": \"BULLISH\"|\"BEARISH\"|\"NEUTRAL\", \"confidence\": \"VERY_HIGH\"|..., \"key_points\": [\"poin1\",\"poin2\",\"poin3\"], \"reasoning\": \"200 kata\"}}""".format(ticker=ticker, lookback=60)
 
     def get_prompt_content(self, ticker: str, market_data: dict) -> str:
         price_data = market_data.get('price_data', {})

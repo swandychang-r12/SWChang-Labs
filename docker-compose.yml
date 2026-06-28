@@ -16,6 +16,8 @@ services:
       - TRADING_SCANNER_PATH=/trading-scanner
       - CONFIG_YAML_PATH=/app/config.yaml
       - PYTHONPATH=/trading-scanner:/app
+      - QDRANT_HOST=r12-qdrant
+      - QDRANT_PORT=6333
     networks:
       - r12-net
     restart: unless-stopped

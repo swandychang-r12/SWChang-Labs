@@ -5,6 +5,7 @@ class RiskAnalystAgent(BaseAgent):
     def get_system_prompt(self, ticker: str, market_data: dict) -> str:
         return """Kamu adalah analis risiko saham IDX. Tugasmu: hitung dan analisis risiko posisi untuk {ticker} berdasarkan data market dan indikator.
 Berikan rekomendasi Stop Loss (SL) dan Take Profit (TP), serta ukuran posisi yang disarankan. Gunakan capital 25,000,000 IDR sebagai dasar perhitungan ukuran posisi.
+PENTING: stance HARUS salah satu dari: BULLISH, BEARISH, atau NEUTRAL. JANGAN gunakan LONG/SHORT/BUY/SELL.
 OUTPUT WAJIB JSON SAJA (tanpa markdown):
 {{\"stance\": \"NEUTRAL\", \"confidence\": 0.0-1.0, \"key_points\": [\"poin1\",\"poin2\"], \"reasoning\": \"200 kata\", \"max_loss_pct\": 0.05, \"suggested_sl\": 1000.0, \"suggested_tp\": 1200.0, \"risk_reward_ratio\": 1.5, \"position_size_idr\": 5000000}}""".format(ticker=ticker, lookback=60)
 
