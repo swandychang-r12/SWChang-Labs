@@ -7,7 +7,7 @@ from datetime import datetime, time
 import pytz
 
 from app.database import init_db, get_db
-from app.routers import screen, analyze, backtest, broker_flow, paper_trade, config_router, debate, journal, portfolio as portfolio_router
+from app.routers import screen, analyze, backtest, broker_flow, paper_trade, config_router, debate, journal, portfolio as portfolio_router, ml_signal
 from app.utils import api_response
 from app.services.morning_report import generate_morning_report
 from app.services.data_fetcher import fetch_universe_data, market_status
@@ -23,6 +23,7 @@ async def lifespan(app: FastAPI):
     await init_db()
     app.state.db = await get_db().__anext__()
     print("[R12] swandy-fund API ready")
+    ml_signal._load_v6()  # preload xgb_v6 at startup
     
     # Initialize scheduler
     scheduler = AsyncIOScheduler(timezone=WIB)
@@ -259,5 +260,7 @@ app.include_router(config_router.router)
 app.include_router(debate.router)
 app.include_router(journal.router)
 app.include_router(portfolio_router.router)
+
+app.include_router(ml_signal.router)
 
 # db initialized in lifespan above
