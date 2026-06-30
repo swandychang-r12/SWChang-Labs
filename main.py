@@ -7,13 +7,14 @@ from datetime import datetime, time
 import pytz
 
 from app.database import init_db, get_db
-from app.routers import screen, analyze, backtest, broker_flow, paper_trade, config_router, debate, journal, portfolio as portfolio_router, ml_signal
+from app.routers import screen, analyze, backtest, broker_flow, paper_trade, config_router, debate, journal, portfolio as portfolio_router, ml_signal, ml_paper
 from app.utils import api_response
 from app.services.morning_report import generate_morning_report
 from app.services.data_fetcher import fetch_universe_data, market_status
 from app.services.data_quality_service import get_data_health, compute_ara_arb, validate_ohlcv
 from app.services.risk_service import compute_atr_position_sizing, compute_single_stock_var, check_drawdown_circuit_breaker
 from app.services.outcome_tracker_service import fill_pending_outcomes
+from app.services.ml_paper_service import MLPaperTrade, fill_ml_outcomes  # registers model to Base
 
 # Timezone setup
 WIB = pytz.timezone("Asia/Jakarta")
@@ -30,6 +31,14 @@ async def lifespan(app: FastAPI):
     
     # Add jobs
     # Outcome tracker T+3 — 16:30 WIB weekdays
+    scheduler.add_job(
+        fill_ml_outcomes,
+        trigger=CronTrigger(hour=16, minute=35, day_of_week="mon-fri", timezone=WIB),
+        id="ml_outcome_tracker",
+        name="Fill ML paper trade T+3/SL outcomes",
+        replace_existing=True,
+    )
+
     scheduler.add_job(
         fill_pending_outcomes,
         trigger=CronTrigger(hour=16, minute=30, day_of_week="mon-fri", timezone=WIB),
@@ -262,5 +271,6 @@ app.include_router(journal.router)
 app.include_router(portfolio_router.router)
 
 app.include_router(ml_signal.router)
+app.include_router(ml_paper.router)
 
 # db initialized in lifespan above
